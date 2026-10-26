@@ -18,7 +18,6 @@ from .aterrors import TwoFactorAuthError
 
 from . import atjsparse
 from .atjsparse import Interpreter
-from .atjsparse import Js2PyInterpreter
 
 
 class Client:
@@ -29,7 +28,7 @@ class Client:
 
         # Config
         self.sessions_dir = '~'
-        self.js: Type[Interpreter] = Js2PyInterpreter
+        self.js: Type[Interpreter] = atjsparse.default_interpreter()
         # ###
 
         self.saved_session = '~/.aternos'  # will be rewritten by login()

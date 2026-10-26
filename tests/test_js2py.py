@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import unittest
+import sys
 
 from python_aternos import atjsparse
 from tests import files
@@ -9,6 +10,10 @@ CONV_TOKEN_ARROW = '''(() => {/*AJAX_TOKEN=123}*/window["AJAX_TOKEN"]=("2r" + "K
 CONV_TOKEN_FUNC = '''(function(){window["AJAX_TOKEN"]=("2r" + "KO" + "A1" + "IFdBcHhEM" + "61" + "6cb");})()'''
 
 
+@unittest.skipIf(
+    sys.version_info >= (3, 12),
+    'Js2Py is incompatible with Python 3.12 and newer',
+)
 class TestJs2Py(unittest.TestCase):
 
     def setUp(self) -> None:

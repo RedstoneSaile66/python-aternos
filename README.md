@@ -21,6 +21,10 @@
 
 An unofficial Aternos API written in Python.  
 It uses [aternos](https://aternos.org/)' private API and html parsing.
+Requires Python 3.9 or newer.
+Python 3.12 and newer use the Node.js interpreter for Aternos' JavaScript token;
+install Node.js, make sure `node` is available on `PATH`, and run `npm ci` in
+the installed `python_aternos/data` directory.
 
 > [!WARNING]
 >
@@ -56,11 +60,9 @@ Python Aternos supports:
 ```bash
 $ pip install python-aternos
 ```
-> **Note** for Windows users
->
-> Install `lxml` package from [here](https://www.lfd.uci.edu/~gohlke/pythonlibs/#lxml)
-> if you have problems with it, and then execute:  
-> `pip install --no-deps python-aternos`
+On Windows, `pip` installs the available `lxml` wheel automatically for supported
+Python versions. If installation falls back to building `lxml` from source, see
+the [lxml installation guide](https://lxml.de/installation.html).
 
 ### Development
 ```bash

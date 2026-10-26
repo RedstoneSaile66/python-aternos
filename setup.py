@@ -20,11 +20,12 @@ setuptools.setup(
     classifiers=[
         'Development Status :: 4 - Beta',
         'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.7',
-        'Programming Language :: Python :: 3.8',
         'Programming Language :: Python :: 3.9',
         'Programming Language :: Python :: 3.10',
         'Programming Language :: Python :: 3.11',
+        'Programming Language :: Python :: 3.12',
+        'Programming Language :: Python :: 3.13',
+        'Programming Language :: Python :: 3.14',
         'License :: OSI Approved :: Apache Software License',
         'Operating System :: OS Independent',
         'Operating System :: Microsoft :: Windows',
@@ -35,11 +36,11 @@ setuptools.setup(
         'Typing :: Typed',
     ],
     install_requires=[
-        'cloudscraper==1.2.71',
-        'Js2Py==0.74',
-        'lxml==4.9.2',
-        'regex==2023.6.3',
-        'websockets==11.0.3',
+        'cloudscraper>=1.2.71',
+        'Js2Py>=0.74; python_version < "3.12"',
+        'lxml>=4.9.3',
+        'regex>=2023.6.3',
+        'websockets>=11,<16',
     ],
     extras_require={
         'dev': [
@@ -60,6 +61,13 @@ setuptools.setup(
         ]
     },
     packages=['python_aternos'],
-    python_requires=">=3.7",
+    package_data={
+        'python_aternos': [
+            'data/*.js',
+            'data/package.json',
+            'data/package-lock.json',
+        ],
+    },
+    python_requires=">=3.9",
     include_package_data=True,
 )

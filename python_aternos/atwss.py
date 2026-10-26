@@ -4,6 +4,7 @@ for real-time information"""
 import enum
 import json
 import asyncio
+import inspect
 
 from typing import Iterable
 from typing import Union, Any
@@ -24,6 +25,17 @@ OneArgT = Callable[[Any], Coroutine[Any, Any, None]]
 TwoArgT = Callable[[Any, Tuple[Any, ...]], Coroutine[Any, Any, None]]
 FunctionT = Union[OneArgT, TwoArgT]  # pylint: disable=invalid-name
 ArgsTuple = Tuple[FunctionT, Tuple[Any, ...]]
+
+
+def _headers_argument(connect: Any) -> str:
+    """Return the header keyword supported by this websockets version."""
+
+    parameters = inspect.signature(connect).parameters
+    return (
+        'additional_headers'
+        if 'additional_headers' in parameters
+        else 'extra_headers'
+    )
 
 
 class Streams(enum.Enum):
@@ -138,10 +150,13 @@ class AternosWss:
                 f'ATERNOS_SERVER={self.servid}'
             )
         ]
-        self.socket = await websockets.connect(  # type: ignore
+        connect_args: Dict[str, Any] = {
+            'origin': 'https://aternos.org',
+            _headers_argument(websockets.connect): headers,
+        }
+        self.socket = await websockets.connect(
             'wss://aternos.org/hermes/',
-            origin='https://aternos.org',
-            extra_headers=headers
+            **connect_args
         )
 
         @self.wssreceiver(Streams.status)

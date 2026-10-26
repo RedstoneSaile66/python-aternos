@@ -6,14 +6,14 @@ import json
 import base64
 
 import subprocess
+import sys
 
 from pathlib import Path
 from typing import Optional, Union
 from typing import Type, Any
+from urllib.request import Request, urlopen
 
 import regex
-import js2py
-import requests
 
 from .atlog import log
 
@@ -99,26 +99,47 @@ class NodeInterpreter(Interpreter):
         assert self.proc.stdout is not None
         ok_msg = self.proc.stdout.readline()
         log.debug('Received from server.js: %s', ok_msg)
+        if ok_msg != b'OK\n':
+            if self.proc.poll() is None:
+                self.proc.terminate()
+                self.proc.communicate()
+            raise RuntimeError(
+                'Node.js interpreter failed to start. Install its '
+                'dependencies by running `npm ci` in python_aternos/data.'
+            )
 
     def exec_js(self, func: str) -> None:
-        resp = requests.post(self.url, data=func, timeout=self.timeout)
-        resp.raise_for_status()
+        req = Request(
+            self.url,
+            data=func.encode('utf-8'),
+            method='POST',
+        )
+        with urlopen(req, timeout=self.timeout) as resp:
+            resp.read()
 
     def get_var(self, name: str) -> Any:
-        resp = requests.post(self.url, data=name, timeout=self.timeout)
-        resp.raise_for_status()
-        log.debug('NodeJS response: %s', resp.content)
-        return json.loads(resp.content)
+        req = Request(
+            self.url,
+            data=name.encode('utf-8'),
+            method='POST',
+        )
+        with urlopen(req, timeout=self.timeout) as resp:
+            content = resp.read()
+        log.debug('NodeJS response: %s', content)
+        return json.loads(content)
 
     def __del__(self) -> None:
         try:
-            self.proc.terminate()
+            if self.proc.poll() is None:
+                self.proc.terminate()
             self.proc.communicate()
         except AttributeError:
             log.warning(
                 'NodeJS process was not initialized, '
                 'but __del__ was called'
             )
+        except ValueError:
+            pass
 
 
 class Js2PyInterpreter(Interpreter):
@@ -133,6 +154,16 @@ class Js2PyInterpreter(Interpreter):
         uses js2py library to execute code"""
 
         super().__init__()
+
+        try:
+            import js2py
+        except RuntimeError as err:
+            if 'made changes to the bytecode' in str(err):
+                raise RuntimeError(
+                    'Js2Py is incompatible with this Python version; '
+                    'use NodeInterpreter instead'
+                ) from err
+            raise
 
         ctx = js2py.EvalJs({'atob': atob})
         ctx.execute('''
@@ -203,6 +234,14 @@ def atob(s: str) -> str:
     """
 
     return base64.standard_b64decode(str(s)).decode('utf-8')
+
+
+def default_interpreter() -> Type[Interpreter]:
+    """Choose a JavaScript interpreter compatible with this Python version."""
+
+    if sys.version_info >= (3, 12):
+        return NodeInterpreter
+    return Js2PyInterpreter
 
 
 def get_interpreter(
