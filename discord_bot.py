@@ -44,46 +44,51 @@ async def start(interaction: discord.Interaction) -> None:
 
     await interaction.response.defer(ephemeral=True, thinking=True)
 
-    def start_server() -> None:
+    def start_server() -> AternosServer:
         ensure_authenticated()
-        aternos.account.get_server(server_id).start(accepteula=False)
+        server = aternos.account.get_server(server_id)
+        server.fetch()
+        server.start(accepteula=False)
+        return server
 
     try:
         async with aternos_lock:
-            await asyncio.to_thread(start_server)
+            server = await asyncio.to_thread(start_server)
+        embed = discord.Embed(
+            title="🚀 Start request accepted",
+            description=(
+                f"Aternos accepted the request to start **{server.subdomain}**."
+            ),
+            color=discord.Color.gold(),
+        )
+        embed.add_field(name="Server address", value=server.address, inline=False)
+        embed.add_field(
+            name="What's next?",
+            value=(
+                "The server may need to wait in the Aternos queue or require "
+                "confirmation there. Check `/serverinfo` for its latest status."
+            ),
+            inline=False,
+        )
         await interaction.followup.send(
-            "Aternos accepted the start request. It may still be queued or "
-            "need confirmation on Aternos.",
+            embed=embed,
             ephemeral=True,
         )
     except ServerStartError as error:
+        message = error.args[-1] if len(error.args) > 1 else str(error)
+        embed = discord.Embed(
+            title="Couldn't start the server",
+            description=str(message),
+            color=discord.Color.red(),
+        )
         await interaction.followup.send(
-            f"Aternos refused the start request: {error}",
+            embed=embed,
             ephemeral=True,
         )
     except Exception:
         logging.exception("Failed to start the Aternos server")
         await interaction.followup.send(
             "Something went wrong. Check the bot's PowerShell output.",
-            ephemeral=True,
-        )
-
-
-@commands.command(name="status", description="Check the configured Aternos server")
-async def status(interaction: discord.Interaction) -> None:
-    await interaction.response.defer(ephemeral=True, thinking=True)
-
-    try:
-        async with aternos_lock:
-            server = await asyncio.to_thread(fetch_server)
-        await interaction.followup.send(
-            f"**{server.subdomain}** is **{server.status}**.",
-            ephemeral=True,
-        )
-    except Exception:
-        logging.exception("Failed to fetch Aternos server status")
-        await interaction.followup.send(
-            "Couldn't retrieve the server status. Check the bot's logs.",
             ephemeral=True,
         )
 
