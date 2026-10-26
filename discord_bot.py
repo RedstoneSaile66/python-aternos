@@ -17,16 +17,26 @@ server_id = os.environ["ATERNOS_SERVER_ID"]
 bot = discord.Client(intents=discord.Intents.none())
 commands = app_commands.CommandTree(bot)
 aternos_lock = asyncio.Lock()
+authenticated = False
 
 
 def fetch_server() -> AternosServer:
+    ensure_authenticated()
+    server = aternos.account.get_server(server_id)
+    server.fetch()
+    return server
+
+
+def ensure_authenticated() -> None:
+    global authenticated
+    if authenticated:
+        return
+
     aternos.login(
         os.environ["ATERNOS_USERNAME"],
         os.environ["ATERNOS_PASSWORD"],
     )
-    server = aternos.account.get_server(server_id)
-    server.fetch()
-    return server
+    authenticated = True
 
 
 @commands.command(name="start", description="Start the configured Aternos server")
@@ -35,10 +45,7 @@ async def start(interaction: discord.Interaction) -> None:
     await interaction.response.defer(ephemeral=True, thinking=True)
 
     def start_server() -> None:
-        aternos.login(
-            os.environ["ATERNOS_USERNAME"],
-            os.environ["ATERNOS_PASSWORD"],
-        )
+        ensure_authenticated()
         aternos.account.get_server(server_id).start(accepteula=False)
 
     try:
